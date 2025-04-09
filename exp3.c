@@ -1,77 +1,77 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <ctype.h>
-#include <regex.h>
 
-int isDelimiter(char ch) {
-    return strchr(" +-*/;,><=()[]{}", ch) != NULL;
+// Check if character is a delimiter
+bool isDelimiter(char ch) {
+    return strchr(" ,;(){}[]=<>", ch) != NULL;
 }
 
-int isOperator(char ch) {
-    return strchr("+-*/><=", ch) != NULL;
+// Check if character is an operator
+bool isOperator(char ch) {
+    return strchr("+-*/=<>", ch) != NULL;
 }
 
-int isKeyword(const char* str) {
-    const char* keywords[] = {
-        "if", "else", "while", "do", "break", "continue", "int", "double",
-        "float", "return", "char", "case", "sizeof", "long", "short", "typedef",
-        "switch", "unsigned", "void", "static", "struct", "goto"
-    };
-    for (int i = 0; i < sizeof(keywords)/sizeof(keywords[0]); i++) {
-        if (strcmp(str, keywords[i]) == 0) return 1;
+// Check if string is a keyword
+bool isKeyword(const char *str) {
+    const char *keywords[] = {"int", "float", "if", "else", "while", "return", "char", "void"};
+    for (int i = 0; i < 8; i++) {
+        if (strcmp(str, keywords[i]) == 0) return true;
     }
-    return 0;
+    return false;
 }
 
-int isMatch(const char* pattern, const char* str) {
-    regex_t regex;
-    regcomp(&regex, pattern, REG_EXTENDED);
-    int result = regexec(&regex, str, 0, NULL, 0);
-    regfree(&regex);
-    return result == 0;
+// Check if string is a valid identifier
+bool isValidIdentifier(const char *str) {
+    return (isalpha(str[0]) || str[0] == '_');
 }
 
-int validIdentifier(const char* str) {
-    return isMatch("^[a-zA-Z_][a-zA-Z0-9_]*$", str);
+// Check if string is an integer
+bool isInteger(const char *str) {
+    for (int i = 0; str[i] != '\0'; i++)
+        if (isdigit(str[i])) return true;
+    return false;
 }
 
-int isInteger(const char* str) {
-    return isMatch("^-?[0-9]+$", str);
+// Extract substring
+char *subString(const char *str, int left, int right) {
+    static char subStr[50];
+    strncpy(subStr, str + left, right - left);
+    subStr[right - left] = '\0';
+    return subStr;
 }
 
-int isRealNumber(const char* str) {
-    return isMatch("^-?[0-9]*\\.[0-9]+$", str);
-}
+// Parse input string
+void parse(const char *str) {
+    int left = 0, right = 0, len = strlen(str);
 
-void parse(const char* str) {
-    char token[100];
-    int i = 0, j = 0;
-
-    while (str[i] != '\0') {
-        if (!isDelimiter(str[i])) {
-            token[j++] = str[i++];
+    while (right <= len) {
+        if (!isDelimiter(str[right]) && str[right] != '\0') {
+            right++;
         } else {
-            if (j != 0) {
-                token[j] = '\0';
-                if (isKeyword(token)) printf("'%s' IS A KEYWORD\n", token);
-                else if (isInteger(token)) printf("'%s' IS AN INTEGER\n", token);
-                else if (isRealNumber(token)) printf("'%s' IS A REAL NUMBER\n", token);
-                else if (validIdentifier(token)) printf("'%s' IS A VALID IDENTIFIER\n", token);
-                else printf("'%s' IS NOT A VALID IDENTIFIER\n", token);
-                j = 0;
+            if (left != right) {
+                char *token = subString(str, left, right);
+                if (isKeyword(token)) 
+                    printf("'%s' is a KEYWORD\n", token);
+                else if (isInteger(token))
+                    printf("'%s' is an INTEGER\n", token);
+                else if (isValidIdentifier(token))
+                    printf("'%s' is an IDENTIFIER\n", token);
+                else
+                    printf("'%s' is INVALID\n", token);
             }
+            if (isOperator(str[right])) 
+                printf("'%c' is an OPERATOR\n", str[right]);
 
-            if (isOperator(str[i])) {
-                printf("'%c' IS AN OPERATOR\n", str[i]);
-            }
-            i++;
+            right++;
+            left = right;
         }
     }
 }
 
 int main() {
-    const char* str = "float y = 1a+b-c;";
+    char str[] = "int a = 10;";
     parse(str);
     return 0;
 }
